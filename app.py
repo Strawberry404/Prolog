@@ -50,7 +50,7 @@ st.markdown('<p class="subheader">Where logic meets beauty, and Prolog meets Pyt
 
 # Create the Prolog code file if it doesn't exist yet
 def initialize_prolog_system():
-    with open('merit_system.pl', 'w') as f:
+    with open('SystemeExpert.pl', 'w') as f:
         f.write("""
 % Déclaration des prédicats dynamiques
 :- dynamic etudiant/6.
@@ -251,88 +251,95 @@ def show_scoring_explanation():
 # Display different pages based on selection
 if page == "📝 Add Students":
     st.header("Add New Students")
-    st.markdown("Let's welcome new students to our merit system! Fill in their details below:")
     
-    # Replace the form submission part with this code
-with st.form("student_form"):
-    col1, col2 = st.columns(2)
+    # Create state variables if they don't exist
+    if 'preview_income' not in st.session_state:
+        st.session_state.preview_income = 10000
+    if 'preview_postal' not in st.session_state:
+        st.session_state.preview_postal = 90000
+    if 'preview_siblings' not in st.session_state:
+        st.session_state.preview_siblings = 0
+    if 'preview_disability' not in st.session_state:
+        st.session_state.preview_disability = False
     
-    with col1:
-        name = st.text_input("Student Name 👤")
-        income = st.number_input("Family Income 💰", min_value=0, value=10000, step=1000)
-        postal_code = st.number_input("Postal Code 📮", min_value=0, value=90000)
+    # Preview calculation OUTSIDE any form
+    st.subheader("Score Preview Calculator")
+    preview_col1, preview_col2 = st.columns(2)
     
-    with col2:
-        siblings = st.number_input("Number of Siblings 👨‍👩‍👧‍👦", min_value=0, value=0)
-        disability = st.checkbox("Family Member with Disability ♿")
+    with preview_col1:
+        st.session_state.preview_income = st.number_input("Preview Income 💰", 
+                                                         min_value=0, 
+                                                         value=st.session_state.preview_income, 
+                                                         step=1000, 
+                                                         key="preview_income_input")
+        st.session_state.preview_postal = st.number_input("Preview Postal Code 📮", 
+                                                         min_value=0, 
+                                                         value=st.session_state.preview_postal,
+                                                         key="preview_postal_input")
+    
+    with preview_col2:
+        st.session_state.preview_siblings = st.number_input("Preview Siblings 👨‍👩‍👧‍👦", 
+                                                          min_value=0, 
+                                                          value=st.session_state.preview_siblings,
+                                                          key="preview_siblings_input")
+        st.session_state.preview_disability = st.checkbox("Preview Disability ♿", 
+                                                        value=st.session_state.preview_disability,
+                                                        key="preview_disability_input")
+    
+    # THIS button is fine because it's outside any form
+    if st.button("Calculate Preview Score", type="secondary"):
+        # Preview calculation logic
+        score = 0
+        if st.session_state.preview_income <= 10000:
+            score += 2
+        elif st.session_state.preview_income <= 20000:
+            score += 1
         
-        # Preview calculation - leave this as is
-        if st.button("Calculate Score Preview", type="secondary"):
-            # This is just for preview - the real calculation happens in Prolog
-            score = 0
-            # Income points
-            if income <= 10000:
-                score += 2
-            elif income <= 20000:
-                score += 1
-            
-            # Postal code points
-            if postal_code == 90000:
-                score += 3
-            elif postal_code in [89999, 90001]:
-                score += 2
-            
-            # Siblings points
-            if siblings > 3:
-                score += 1.5
-            
-            # Disability points
-            if disability:
-                score += 1.5
-                
-            st.info(f"Estimated score: {score} / 8")
-    
-    # This is our submit button
-    submit_button =  st.form_submit_button("Add Student")
-    
-# Move the submission logic OUTSIDE the form
-# This ensures it runs after the form has been submitted
-if submit_button:
-    if name:
-        add_student(name, income, postal_code, siblings, disability)
-        st.success(f"✅ {name} has been added to the system! Their application will be considered.")
-        # Force a rerun to refresh the list
-        st.experimental_rerun()
-    else:
-        st.warning("⚠️ Please enter a student name.")
-    
-    # Show existing students with delete option
-    students = fetch_students()
-    if students:
-        st.header("Current Students")
-        st.markdown(f"You have {len(students)} students in the system.")
+        if st.session_state.preview_postal == 90000:
+            score += 3
+        elif st.session_state.preview_postal in [89999, 90001]:
+            score += 2
         
-        for i, student in enumerate(students):
-            with st.container():
-                col1, col2, col3 = st.columns([3, 2, 1])
-                
-                with col1:
-                    st.markdown(f"**{student['name']}** (Score: {student['score']})")
-                
-                with col2:
-                    details = f"Income: {student['income']}, Postal: {student['postal_code']}"
-                    details += f", Siblings: {student['siblings']}"
-                    details += f", Disability: {'Yes' if student['disability'] else 'No'}"
-                    st.markdown(details)
-                
-                with col3:
-                    if st.button("Delete", key=f"del_{i}"):
-                        remove_student(student['name'])
-                        st.success(f"Removed {student['name']} from the system.")
-                        st.experimental_rerun()
-    else:
-        st.info("No students in the system yet. Add some students to get started!")
+        if st.session_state.preview_siblings > 3:
+            score += 1.5
+        
+        if st.session_state.preview_disability:
+            score += 1.5
+            
+        st.info(f"Estimated preview score: {score} / 8")
     
+    st.markdown("---")
+    
+    # Actual student addition form - completely separate!
+    st.subheader("Add New Student")
+    st.markdown("Fill in student details below:")
+    
+    with st.form(key="student_form"):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            name = st.text_input("Student Name 👤")
+            income = st.number_input("Family Income 💰", min_value=0, value=10000, step=1000)
+            postal_code = st.number_input("Postal Code 📮", min_value=0, value=90000)
+        
+        with col2:
+            siblings = st.number_input("Number of Siblings 👨‍👩‍👧‍👦", min_value=0, value=0)
+            disability = st.checkbox("Family Member with Disability ♿")
+        
+        # The one and only button in the form - a submit button
+        submit_button = st.form_submit_button("Add Student 🚀")
+    
+    # Process submission logic
+    if submit_button:
+        if name:
+            add_student(name, income, postal_code, siblings, disability)
+            st.success(f"✅ {name} has been added to the system! Their application will be considered.")
+            st.rerun()
+
+        else:
+            st.warning("⚠️ Please enter a student name.")
+    
+    # Rest of the student display code stays the same...  
 elif page == "🏆 View Rankings":
     st.header("Student Merit Rankings")
     
