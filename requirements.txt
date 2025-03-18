@@ -1,0 +1,6 @@
+pip install  streamlit 
+pip install  subprocess
+pip install  re
+pip install  pandas as pd
+pip install  graphviz
+pip install  os
