@@ -253,52 +253,58 @@ if page == "📝 Add Students":
     st.header("Add New Students")
     st.markdown("Let's welcome new students to our merit system! Fill in their details below:")
     
-    with st.form("student_form"):
-        col1, col2 = st.columns(2)
+    # Replace the form submission part with this code
+with st.form("student_form"):
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        name = st.text_input("Student Name 👤")
+        income = st.number_input("Family Income 💰", min_value=0, value=10000, step=1000)
+        postal_code = st.number_input("Postal Code 📮", min_value=0, value=90000)
+    
+    with col2:
+        siblings = st.number_input("Number of Siblings 👨‍👩‍👧‍👦", min_value=0, value=0)
+        disability = st.checkbox("Family Member with Disability ♿")
         
-        with col1:
-            name = st.text_input("Student Name 👤")
-            income = st.number_input("Family Income 💰", min_value=0, value=10000, step=1000)
-            postal_code = st.number_input("Postal Code 📮", min_value=0, value=90000)
-        
-        with col2:
-            siblings = st.number_input("Number of Siblings 👨‍👩‍👧‍👦", min_value=0, value=0)
-            disability = st.checkbox("Family Member with Disability ♿")
+        # Preview calculation - leave this as is
+        if st.button("Calculate Score Preview", type="secondary"):
+            # This is just for preview - the real calculation happens in Prolog
+            score = 0
+            # Income points
+            if income <= 10000:
+                score += 2
+            elif income <= 20000:
+                score += 1
             
-            # A little preview of the score
-            if st.button("Calculate Score Preview", type="secondary"):
-                # This is just for preview - the real calculation happens in Prolog
-                score = 0
-                # Income points
-                if income <= 10000:
-                    score += 2
-                elif income <= 20000:
-                    score += 1
+            # Postal code points
+            if postal_code == 90000:
+                score += 3
+            elif postal_code in [89999, 90001]:
+                score += 2
+            
+            # Siblings points
+            if siblings > 3:
+                score += 1.5
+            
+            # Disability points
+            if disability:
+                score += 1.5
                 
-                # Postal code points
-                if postal_code == 90000:
-                    score += 3
-                elif postal_code in [89999, 90001]:
-                    score += 2
-                
-                # Siblings points
-                if siblings > 3:
-                    score += 1.5
-                
-                # Disability points
-                if disability:
-                    score += 1.5
-                    
-                st.info(f"Estimated score: {score} / 8")
-        
-        submit = st.form_submit_button("Add Student 🚀")
-        
-        if submit:
-            if name:
-                add_student(name, income, postal_code, siblings, disability)
-                st.success(f"✅ {name} has been added to the system! Their application will be considered.")
-            else:
-                st.warning("⚠️ Please enter a student name.")
+            st.info(f"Estimated score: {score} / 8")
+    
+    # This is our submit button
+    submit_button =  st.form_submit_button("Add Student")
+    
+# Move the submission logic OUTSIDE the form
+# This ensures it runs after the form has been submitted
+if submit_button:
+    if name:
+        add_student(name, income, postal_code, siblings, disability)
+        st.success(f"✅ {name} has been added to the system! Their application will be considered.")
+        # Force a rerun to refresh the list
+        st.experimental_rerun()
+    else:
+        st.warning("⚠️ Please enter a student name.")
     
     # Show existing students with delete option
     students = fetch_students()
