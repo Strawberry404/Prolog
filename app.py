@@ -99,17 +99,21 @@ calculer_score(Revenu, CodePostal, NbFreres, Handicap, Score) :-
 % Ajouter un étudiant
 ajouter_etudiant(Nom, Revenu, CodePostal, NbFreres, Handicap) :-
     calculer_score(Revenu, CodePostal, NbFreres, Handicap, Score),
-    assertz(etudiant(Nom, Revenu, CodePostal, NbFreres, Handicap, Score)).
+    assertz(etudiant(Nom, Revenu, CodePostal, NbFreres, Handicap, Score)),
+    save_data.  % Auto-save after addition
 
 % Supprimer un étudiant
 supprimer_etudiant(Nom) :-
-    retract(etudiant(Nom, _, _, _, _, _)).
+    retract(etudiant(Nom, _, _, _, _, _)),
+    save_data.  % Auto-save after deletion
 
 % Récupérer tous les étudiants
 get_all_students(Students) :-
     findall(etudiant(Nom, Revenu, CodePostal, NbFreres, Handicap, Score),
             etudiant(Nom, Revenu, CodePostal, NbFreres, Handicap, Score),
-            Students).
+            Students),
+    write(Students), nl.
+
 
 % Obtenir la liste triée
 get_sorted_students(SortedStudents) :-
@@ -126,7 +130,8 @@ save_data :-
 
 % Charger les données depuis un fichier
 load_data :-
-    [student_data].
+    exists_file('student_data.pl') -> [student_data] ; true.
+
         """)
     
     # Create database file if it doesn't exist
@@ -142,7 +147,7 @@ def run_prolog_query(query):
     try:
         # The subprocess.run is like a portal between dimensions!
         result = subprocess.run(
-            ['swipl', '-q', '-s', 'merit_system.pl', '-g', query, '-t', 'halt'],
+            ['swipl', '-q', '-s', 'SystemeExpert.pl', '-g', query, '-t', 'halt'],
             capture_output=True,
             text=True,
             check=True
@@ -158,10 +163,9 @@ def run_prolog_query(query):
 # Load our brilliant students from the Prolog dimension
 def fetch_students():
     # First, make sure we load any saved students
-    run_prolog_query("load_data")
+    result = run_prolog_query("afficher_liste_merite.")
     
     # Ask Prolog for all students
-    result = run_prolog_query("get_all_students(Students), write(Students).")
     
     students = []
     if result and result.strip():

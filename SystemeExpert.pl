@@ -1,41 +1,42 @@
-
-% DÈclaration des prÈdicats dynamiques
+% D√©claration des pr√©dicats dynamiques - AJOUTEZ CECI AU TOUT D√âBUT DU FICHIER
 :- dynamic etudiant/6.
 
-% DÈfinition des constantes
+% D√©finition des constantes
 salaire_minimum(10000).
 grand_famille(3).
 ecole_postal(90000).
 
-% DÈfinir une structure pour reprÈsenter un Ètudiant
+%D√©finir une structure pour repr√©senter un √©tudiant
 etudiant(Nom, Revenu, CodePostal, NbFreres, Handicap, Score).
 
-% RËgle 1: salaire 
+%Cr√©er des r√®gles pour calculer le score selon les crit√®res donn√©s
+
+%regle 1 : salaire 
 points_salaire(Revenu, Points) :- 
     salaire_minimum(Min),
     (Revenu =< Min -> Points = 2 ;
      Revenu =< 2*Min -> Points = 1 ;
      Points = 0).
 
-% RËgle 2: zone postal 
+%regle 2 zone postal 
 points_postal(CodePostal, Points) :- 
     ecole_postal(Code),
     (CodePostal = Code -> Points = 3 ;
-     CodePostal =:= Code+1 -> Points = 2 ;
-     CodePostal =:= Code-1 -> Points = 2;
+     CodePostal =Code+1 -> Points = 2 ;
+     CodePostal =Code-1 -> Points = 2;
      Points = 0).
 
-% RËgle 3: nbr de frËre et soeur
+%regle 3 nbr de frere et soeur
 points_famille(NbFreres, Points) :- 
     grand_famille(Seuil),
     (NbFreres > Seuil -> Points = 1.5 ;
      Points = 0).
 
-% RËgle 4: des handicap
-points_handicap(true, 1.5).
-points_handicap(false, 0).
+%regle 4  des handicape
+points_handicap(true, 1.5 ).
+points_handicap(false, 0 ).
 
-% RËgle 5: calcul de score 
+% regle 5 calcule de score 
 calculer_score(Revenu, CodePostal, NbFreres, Handicap, Score) :-
     points_salaire(Revenu, S1),
     points_postal(CodePostal, S2),
@@ -43,35 +44,60 @@ calculer_score(Revenu, CodePostal, NbFreres, Handicap, Score) :-
     points_handicap(Handicap, S4),
     Score is S1 + S2 + S3 + S4.
 
-% Ajouter un Ètudiant
-ajouter_etudiant(Nom, Revenu, CodePostal, NbFreres, Handicap) :-
+
+%Impl√©menter l interface utilisateur pour saisir les informations
+
+% Interface pour ajouter un nouvel √©tudiant
+ajouter_etudiant :-
+    write('Entrez le nom de l\'√©tudiant: '),
+    read(Nom),
+    write('Entrez le revenu annuel de la famille: '),
+    read(Revenu),
+    write('Entrez le code postal du domicile: '),
+    read(CodePostal),
+    write('Entrez le nombre de fr√®res/soeurs inscrits au centre: '),
+    read(NbFreres),
+    write('Y a-t-il un handicap dans la famille? (true/false): '),
+    read(Handicap),
+    
+    % Calcul du score
     calculer_score(Revenu, CodePostal, NbFreres, Handicap, Score),
-    assertz(etudiant(Nom, Revenu, CodePostal, NbFreres, Handicap, Score)).
+    
+    % Ajouter √† la base de connaissances avec assert
+    assert(etudiant(Nom, Revenu, CodePostal, NbFreres, Handicap, Score)),
+    
+    write('√âtudiant ajout√© avec succ√®s. Score: '),
+    write(Score), nl,
+    write('Voulez-vous ajouter un autre √©tudiant? (oui/non): '),
+    read(Reponse),
+    (Reponse = oui -> ajouter_etudiant ; true).
 
-% Supprimer un Ètudiant
-supprimer_etudiant(Nom) :-
-    retract(etudiant(Nom, _, _, _, _, _)).
+afficher_liste_merite :-
+    findall(etudiant(Nom, Revenu, CodePostal, NbFreres, Handicap, Score)-Score, 
+            etudiant(Nom, Revenu, CodePostal, NbFreres, Handicap, Score), 
+            ListeEtudiants),
+    sort(2, @>=, ListeEtudiants, ListeTriee),
+    format("~w~n", [ListeTriee]).
 
-% RÈcupÈrer tous les Ètudiants
-get_all_students(Students) :-
+% Pr√©dicat auxiliaire pour afficher les d√©tails
+afficher_liste_detaillee([]) :- nl.
+afficher_liste_detaillee([etudiant(Nom, Revenu, CodePostal, NbFreres, Handicap, Score)-_|Reste]) :-
+    write('Nom: '), write(Nom), nl,
+    write('  Score: '), write(Score), nl,
+    write('  Revenu: '), write(Revenu), nl,
+    write('  Code Postal: '), write(CodePostal), nl,
+    write('  Nombre de fr√®res/s≈ìurs: '), write(NbFreres), nl,
+    write('  Handicap: '), write(Handicap), nl,
+    write('---------------------------------------------'), nl,
+    afficher_liste_detaillee(Reste).
+
+
+get_all_students :-
     findall(etudiant(Nom, Revenu, CodePostal, NbFreres, Handicap, Score),
             etudiant(Nom, Revenu, CodePostal, NbFreres, Handicap, Score),
-            Students).
-
-% Obtenir la liste triÈe
-get_sorted_students(SortedStudents) :-
-    findall(etudiant(Nom, Revenu, CodePostal, NbFreres, Handicap, Score)-Score,
-            etudiant(Nom, Revenu, CodePostal, NbFreres, Handicap, Score),
             Students),
-    sort(2, @>=, Students, SortedStudents).
+    format("~w~n", [Students]).
 
-% Sauvegarder les donnÈes dans un fichier
-save_data :-
-    tell('student_data.pl'),
-    listing(etudiant/6),
-    told.
-
-% Charger les donnÈes depuis un fichier
 load_data :-
-    [student_data].
-        
+    exists_file('student_data.pl') -> [student_data] ; true.
+
